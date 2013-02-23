@@ -17,10 +17,10 @@ ENV.LOG.DROP_PATTERN or= {}
 {partial, or_, and_, bool} = require 'libprotein'
 
 logger_proto = [
-    ['info',    [], 'varargs']
-    ['warn',    [], 'varargs']
-    ['error',   [], 'varargs']
-    ['debug',   [], 'varargs']
+    ['info',    [], {varargs: true}]
+    ['warn',    [], {varargs: true}]
+    ['error',   [], {varargs: true}]
+    ['debug',   [], {varargs: true}]
 ]
 
 say = (a...) -> console?.log a...
