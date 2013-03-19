@@ -1,7 +1,7 @@
 {
   "name": "console-logger",
   "description": "Simple implementation of an ILogger protocol, can be used as an common-js module too",
-  "version": "0.0.8",
+  "version": "0.0.81",
   "author": "E.Naumenko",
   "repository": {
     "type" : "git",

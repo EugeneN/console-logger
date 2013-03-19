@@ -1,3 +1,5 @@
+{partial, or_, and_, bool} = require 'libprotein'
+
 bootstrapper = try
     require 'bootstrapper'
 catch e
@@ -56,8 +58,6 @@ GREP_PATTERN = 'GREP_PATTERN'
 DROP_PATTERN = 'DROP_PATTERN'
 LOG_LEVELS = [INFO, WARN, ERROR, DEBUG]
 
-{partial, or_, and_, bool} = require 'libprotein'
-
 logger_proto = [
     ['info',    [], {varargs: true}]
     ['warn',    [], {varargs: true}]
@@ -65,7 +65,18 @@ logger_proto = [
     ['debug',   [], {varargs: true}]
 ]
 
-say = (a...) -> console?.log a...
+say = (log_level, a...) ->
+    switch log_level
+        when ERROR
+            console?.error? a...
+        when INFO
+            console?.info a...
+        when DEBUG
+            console?.debug a...
+        when WARN
+            console?.warn a...
+        else
+            console?.log a...
 
 
 valid_for_inclusion = if bootstrapper
@@ -77,19 +88,19 @@ valid_for_exclusion = if bootstrapper
     partial match, DROP_PATTERN, false
 else
     -> false
-        
+
 log_level_enabled = (log_level) ->
     if bootstrapper
         ENV.LOG[log_level] is true
     else
         true
-        
+
 log = (log_level, msg...) ->
     if (and_ (log_level_enabled log_level),
              (valid_for_inclusion log_level, msg),
              (not valid_for_exclusion log_level, msg))
-        
-        say (["[#{log_level}]"].concat msg)...
+
+        say log_level, (["[#{log_level}]"].concat msg)...
 
 info =  partial log, INFO
 warn =  partial log, WARN
