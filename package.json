@@ -1,13 +1,13 @@
 {
   "name": "console-logger",
   "description": "Simple implementation of an ILogger protocol, can be used as an common-js module too",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "author": "E.Naumenko",
   "repository": {
     "type" : "git",
     "url": "https://github.com/EugeneN/console-logger"
   },
-  "scripts": {"postinstall": "coffee index.coffee -c"},
+  "scripts": {"postinstall": "coffee -c index.coffee"},
   "engine" : [ "node >=0.1.102" ],
   "main" : "./index.js"
 }
