@@ -1,124 +1,87 @@
-{partial, or_, and_, bool} = require 'libprotein'
+{partial, or_, and_, bool, is_object} = require 'libprotein'
 
-bootstrapper = try
-    require 'bootstrapper'
+LOGCFG = try
+    bt = require 'bootstrapper'
+    if bt and (is_object bt.ENV) and (is_object bt.ENV.LOG)
+        bt.ENV.LOG
+    else
+        null
 catch e
-    null
-
-if bootstrapper
-    ENV = bootstrapper.ENV
-    # hack
-    ENV.LOG or= {}
-    ENV.LOG.GREP_PATTERN or= {}
-    ENV.LOG.DROP_PATTERN or= {}
-
-    match = (grep_or_drop, default_, log_level, msg) ->
-        if bool ENV.LOG[grep_or_drop][log_level]
-            (or_ (msg.map (s) -> !!(or_ ENV.LOG[grep_or_drop][log_level].map (p) -> p.test s)))
-        else
-            default_
-
-    set_pattern = (grep_or_drop, args...) ->
-        if args.length is 1
-            pattern = args[0]
-            LOG_LEVELS.map (log_level) ->
-                ENV.LOG[grep_or_drop][log_level] or= []
-                ENV.LOG[grep_or_drop][log_level].push pattern
-
-        else
-            [log_level, pattern] = args
-            if log_level in LOG_LEVELS
-                ENV.LOG[grep_or_drop][log_level] or= []
-                ENV.LOG[grep_or_drop][log_level].push pattern
-            else
-                throw "Unknown log level: #{log_level}"
-
-        true
-
-    clear = (grep_or_drop, log_level) ->
-        if log_level in LOG_LEVELS
-            ENV.LOG[grep_or_drop][log_level] = []
-        else
-            LOG_LEVELS.map (log_level) ->
-                ENV.LOG[grep_or_drop][log_level] = []
-
-        true
-
-    # hack
-    ENV.ROOT_NS.grep = partial set_pattern, GREP_PATTERN
-    ENV.ROOT_NS.drop = partial set_pattern, DROP_PATTERN
-    ENV.ROOT_NS.clear_grep = partial clear, GREP_PATTERN
-    ENV.ROOT_NS.clear_drop = partial clear, DROP_PATTERN
+    if process and (is_object process.ENV) and (is_object process.ENV.LOG)
+        process.ENV.LOG
+    else if window and (is_object window.ENV) and (is_object window.ENV.LOG)
+        window.ENV.LOG
+    else
+        null
 
 INFO = 'INFO'
 WARN = 'WARN'
 ERROR = 'ERROR'
 DEBUG = 'DEBUG'
-GREP_PATTERN = 'GREP_PATTERN'
-DROP_PATTERN = 'DROP_PATTERN'
-LOG_LEVELS = [INFO, WARN, ERROR, DEBUG]
+NOTICE = 'NOTICE'
+LOG_LEVELS = [INFO, WARN, ERROR, DEBUG, NOTICE]
 
-logger_proto = [
-    ['info',    [], {varargs: true}]
-    ['warn',    [], {varargs: true}]
-    ['error',   [], {varargs: true}]
-    ['debug',   [], {varargs: true}]
-]
+UNK_NS = UNK_NS
 
-say = (log_level, a...) ->
+say = (log_level, log_ns, msgs) ->
+    m = [(if log_level then "[#{log_level}]" else '[NOTICE]'),
+         (if log_ns then "[#{log_ns}]" else "[#{UNK_NS}]")].concat msgs
     switch log_level
         when ERROR
-            console?.error? a...
+            console?.error? m...
         when INFO
-            console?.info a...
+            console?.info m...
         when DEBUG
-            console?.debug a...
+            console?.debug m...
         when WARN
-            console?.warn a...
+            console?.warn m...
         else
-            console?.log a...
-
-
-valid_for_inclusion = if bootstrapper
-    partial match, GREP_PATTERN, true
-else
-    -> true
-
-valid_for_exclusion = if bootstrapper
-    partial match, DROP_PATTERN, false
-else
-    -> false
+            console?.log m...
 
 log_level_enabled = (log_level) ->
-    if bootstrapper
-        ENV.LOG[log_level] is true
-    else
-        true
+    if LOGCFG then (LOGCFG.level?[log_level] is true) else true
 
-log = (log_level, msg...) ->
+log_ns_enabled = (log_ns) ->
+    if LOGCFG then (LOGCFG.ns?[log_ns] is true) else true
+
+log = (log_level, log_ns, msg...) ->
     if (and_ (log_level_enabled log_level),
-             (valid_for_inclusion log_level, msg),
-             (not valid_for_exclusion log_level, msg))
+             (log_ns_enabled log_ns))
+        say log_level, log_ns, msg
 
-        say log_level, (["[#{log_level}]"].concat msg)...
+get_namespaced_logger = (log_ns) ->
+    if LOGCFG
+        LOGCFG.ns or= {}
+        unless LOGCFG.ns.hasOwnProperty log_ns
+            LOGCFG.ns[log_ns] = true
 
-info =  partial log, INFO
-warn =  partial log, WARN
-error = partial log, ERROR
-debug = partial log, DEBUG
-
-console_logger = (opts) -> {info, warn, error, debug}
-
-
+    info:   partial log, INFO, log_ns
+    warn:   partial log, WARN, log_ns
+    error:  partial log, ERROR, log_ns
+    debug:  partial log, DEBUG, log_ns
+    notice: partial log, NOTICE, log_ns
 
 module.exports =
-    info: info
-    warn: warn
-    error: error
-    debug: debug
+    # for use like this: {info, warn,...} = require 'console.logger'
+    info:   partial log, INFO, UNK_NS
+    warn:   partial log, WARN, UNK_NS
+    error:  partial log, ERROR, UNK_NS
+    debug:  partial log, DEBUG, UNK_NS
+    notice: partial log, NOTICE, UNK_NS
+
+    # for use like this: {info, warn,...} = (require 'console.logger').ns 'my-ns'
+    ns: get_namespaced_logger
+
 
     protocols:
         definitions:
-            ILogger: logger_proto
+            ILogger: [
+                ['info',     [], {varargs: true}]
+                ['warn',     [], {varargs: true}]
+                ['error',    [], {varargs: true}]
+                ['debug',    [], {varargs: true}]
+                ['notice',   [], {varargs: true}]
+            ]
         implementations:
-            ILogger: console_logger
+            # for use like this: {info, warn,...} = dispatch_impl 'ILogger', 'my-ns'
+            ILogger: get_namespaced_logger
