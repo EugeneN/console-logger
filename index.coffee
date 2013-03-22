@@ -15,29 +15,32 @@ catch e
         null
 
 
-if window? and LOGCFG
-    window.logger_mute_ns_except = (exp) ->
-        if exp and not is_array exp
-            exp = [exp]
+try
+    if window? and LOGCFG
+        window.logger_mute_ns_except = (exp) ->
+            if exp and not is_array exp
+                exp = [exp]
 
-        for k of LOGCFG.ns
-            LOGCFG.ns[k] = if k in exp then true else false
+            for k of LOGCFG.ns
+                LOGCFG.ns[k] = if k in exp then true else false
 
-    window.logger_unmute_ns = ->
-        for k of LOGCFG.ns
-            LOGCFG.ns[k] = true
+        window.logger_unmute_ns = ->
+            for k of LOGCFG.ns
+                LOGCFG.ns[k] = true
 
-    window.logger_mute_ns = ->
-        for k of LOGCFG.ns
-            LOGCFG.ns[k] = false
+        window.logger_mute_ns = ->
+            for k of LOGCFG.ns
+                LOGCFG.ns[k] = false
 
-    window.logger_unmute_level = ->
-        for k of LOGCFG.level
-            LOGCFG.level[k] = true
+        window.logger_unmute_level = ->
+            for k of LOGCFG.level
+                LOGCFG.level[k] = true
 
-    window.logger_mute_level = ->
-        for k of LOGCFG.level
-            LOGCFG.level[k] = false
+        window.logger_mute_level = ->
+            for k of LOGCFG.level
+                LOGCFG.level[k] = false
+catch e
+    null
 
 INFO = 'INFO'
 WARN = 'WARN'
