@@ -1,4 +1,4 @@
-{partial, or_, and_, bool, is_object} = require 'libprotein'
+{partial, or_, and_, bool, is_object, is_array} = require 'libprotein'
 
 LOGCFG = try
     bt = require 'bootstrapper'
@@ -13,6 +13,30 @@ catch e
         window.ENV.LOG
     else
         null
+
+if window
+    window.logger_mute_ns_except = (exp) ->
+        if exp and not is_array exp
+            exp = [exp]
+
+        for k of APPCFG.ENV.LOG.ns
+            APPCFG.ENV.LOG.ns[k] = if k in exp then true else false
+
+    window.logger_unmute_ns = ->
+        for k of APPCFG.ENV.LOG.ns
+            APPCFG.ENV.LOG.ns[k] = true
+
+    window.logger_mute_ns = ->
+        for k of APPCFG.ENV.LOG.ns
+            APPCFG.ENV.LOG.ns[k] = false
+
+    window.logger_unmute_level = ->
+        for k of APPCFG.ENV.LOG.level
+            APPCFG.ENV.LOG.ns[k] = true
+
+    window.logger_mute_level = ->
+        for k of APPCFG.ENV.LOG.level
+            APPCFG.ENV.LOG.ns[k] = false
 
 INFO = 'INFO'
 WARN = 'WARN'
