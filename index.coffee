@@ -52,12 +52,8 @@ LOG_LEVELS = [INFO, WARN, ERROR, DEBUG, NOTICE]
 UNK_NS = UNK_NS
 
 say = (log_level, log_ns, msgs) ->
-    console.log (new Error).stack
-    [_..., fn] = (new Error).stack.split('\n')[4].split(' ').filter((i) -> !!i)[1].split('.')
-
     m = [(if log_level then "[#{log_level}]" else '[NOTICE]'),
-         (if log_ns then "[#{log_ns}]" else "[#{UNK_NS}]"),
-         (if fn then "[#{fn}]" else "")].concat msgs
+         (if log_ns then "[#{log_ns}]" else "[#{UNK_NS}]")].concat msgs
     switch log_level
         when ERROR
             console?.error? m...
