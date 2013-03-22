@@ -7,9 +7,9 @@ LOGCFG = try
     else
         null
 catch e
-    if process and (is_object process.ENV) and (is_object process.ENV.LOG)
+    if process? and (is_object process.ENV) and (is_object process.ENV.LOG)
         process.ENV.LOG
-    else if window and (is_object window.ENV) and (is_object window.ENV.LOG)
+    else if window? and (is_object window.ENV) and (is_object window.ENV.LOG)
         window.ENV.LOG
     else
         null
