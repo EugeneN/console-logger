@@ -14,6 +14,7 @@ catch e
     else
         null
 
+window or= null
 if window and LOGCFG
     window.logger_mute_ns_except = (exp) ->
         if exp and not is_array exp
