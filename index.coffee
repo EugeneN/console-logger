@@ -32,11 +32,11 @@ if window and LOGCFG
 
     window.logger_unmute_level = ->
         for k of LOGCFG.level
-            LOGCFG.ns[k] = true
+            LOGCFG.level[k] = true
 
     window.logger_mute_level = ->
         for k of LOGCFG.level
-            LOGCFG.ns[k] = false
+            LOGCFG.level[k] = false
 
 INFO = 'INFO'
 WARN = 'WARN'
