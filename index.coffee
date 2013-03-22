@@ -14,29 +14,29 @@ catch e
     else
         null
 
-if window
+if window and LOGCFG
     window.logger_mute_ns_except = (exp) ->
         if exp and not is_array exp
             exp = [exp]
 
-        for k of APPCFG.ENV.LOG.ns
-            APPCFG.ENV.LOG.ns[k] = if k in exp then true else false
+        for k of LOGCFG.ns
+            LOGCFG.ns[k] = if k in exp then true else false
 
     window.logger_unmute_ns = ->
-        for k of APPCFG.ENV.LOG.ns
-            APPCFG.ENV.LOG.ns[k] = true
+        for k of LOGCFG.ns
+            LOGCFG.ns[k] = true
 
     window.logger_mute_ns = ->
-        for k of APPCFG.ENV.LOG.ns
-            APPCFG.ENV.LOG.ns[k] = false
+        for k of LOGCFG.ns
+            LOGCFG.ns[k] = false
 
     window.logger_unmute_level = ->
-        for k of APPCFG.ENV.LOG.level
-            APPCFG.ENV.LOG.ns[k] = true
+        for k of LOGCFG.level
+            LOGCFG.ns[k] = true
 
     window.logger_mute_level = ->
-        for k of APPCFG.ENV.LOG.level
-            APPCFG.ENV.LOG.ns[k] = false
+        for k of LOGCFG.level
+            LOGCFG.ns[k] = false
 
 INFO = 'INFO'
 WARN = 'WARN'
