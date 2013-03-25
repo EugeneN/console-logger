@@ -77,6 +77,8 @@ log = (log_level, log_ns, msg...) ->
              (log_ns_enabled log_ns))
         say log_level, log_ns, msg
 
+nullog = ->
+
 get_namespaced_logger = (log_ns) ->
     if LOGCFG
         LOGCFG.ns or= {}
@@ -88,6 +90,7 @@ get_namespaced_logger = (log_ns) ->
     error:  partial log, ERROR, log_ns
     debug:  partial log, DEBUG, log_ns
     notice: partial log, NOTICE, log_ns
+    nullog: nullog
 
 module.exports =
     # for use like this: {info, warn,...} = require 'console.logger'
@@ -96,6 +99,7 @@ module.exports =
     error:  partial log, ERROR, UNK_NS
     debug:  partial log, DEBUG, UNK_NS
     notice: partial log, NOTICE, UNK_NS
+    nullog: nullog
 
     # for use like this: {info, warn,...} = (require 'console.logger').ns 'my-ns'
     ns: get_namespaced_logger
@@ -109,6 +113,7 @@ module.exports =
                 ['error',    [], {varargs: true}]
                 ['debug',    [], {varargs: true}]
                 ['notice',   [], {varargs: true}]
+                ['nullog',   [], {varargs: true}]
             ]
         implementations:
             # for use like this: {info, warn,...} = dispatch_impl 'ILogger', 'my-ns'
