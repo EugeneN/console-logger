@@ -1,3 +1,23 @@
+root = if process?
+    process
+else if window?
+    window
+else
+    {}
+
+unless root.console
+    root.console =
+        log: ->
+        info: ->
+        warn: ->
+        error: ->
+        assert: ->
+        dir: ->
+        clear: ->
+        profile: ->
+        profileEnd: ->
+
+
 # HOTFIX for ie < 9 (doesn't supports console.log.apply as a function)
 # link - http://stackoverflow.com/questions/5538972/console-log-apply-not-working-in-ie9
 `if (Function.prototype.bind && console && typeof console.log == "object") {
