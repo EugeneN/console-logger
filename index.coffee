@@ -1,3 +1,13 @@
+# HOTFIX for ie < 9 (doesn't supports console.log.apply as a function)
+# link - http://stackoverflow.com/questions/5538972/console-log-apply-not-working-in-ie9
+`if (Function.prototype.bind && console && typeof console.log == "object") {
+    [
+      "log","info","warn","error","assert","dir","clear","profile","profileEnd"
+    ].forEach(function (method) {
+        console[method] = this.bind(console[method], console);
+    }, Function.prototype.call);
+}`
+
 {partial, or_, and_, bool, is_object, is_array} = require 'libprotein'
 
 LOGCFG = try
