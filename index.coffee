@@ -59,7 +59,7 @@ DEBUG = 'DEBUG'
 NOTICE = 'NOTICE'
 LOG_LEVELS = [INFO, WARN, ERROR, DEBUG, NOTICE]
 
-UNK_NS = UNK_NS
+UNK_NS = 'UNK_NS'
 
 say = (log_level, log_ns, msgs) ->
     m = [(if log_level then "[#{log_level}]" else '[NOTICE]'),
