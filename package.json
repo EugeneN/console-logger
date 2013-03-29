@@ -13,6 +13,9 @@
     "postinstall": "coffee -c index.coffee"
   },
   "cafebuild": "coffee -c index.coffee",
+  "dependencies": {
+    "libprotein": "*"
+  },
   "engine": [
     "node >=0.1.102"
   ],
