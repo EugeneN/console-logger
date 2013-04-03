@@ -1,5 +1,2 @@
-.eunit
-deps
-*.o
-*.beam
-*.plt
+node_modules
+index.js

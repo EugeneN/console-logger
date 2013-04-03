@@ -103,21 +103,28 @@ log_level_enabled = (log_level) ->
     if LOGCFG then (LOGCFG.level?[log_level] is true) else true
 
 log_ns_enabled = (log_ns) ->
-    if LOGCFG then (LOGCFG.ns?[log_ns] is true) else true
+    if LOGCFG then (LOGCFG.ns?[log_ns] is true) else false
 
 log = (log_level, log_ns, msg...) ->
-    if (and_ (log_level_enabled log_level),
-             (log_ns_enabled log_ns))
-        say log_level, log_ns, msg
+    ns_keys = (k for k, v of LOGCFG.ns)
+
+    enabled = if LOGCFG.enabled?
+        LOGCFG.enabled
+    else
+        true
+
+    return unless enabled
+
+    if ns_keys.length
+        if log_ns_enabled(log_ns) and (log_level_enabled log_level)
+            say log_level, log_ns, msg
+    else
+        if (log_level_enabled log_level)
+            say log_level, log_ns, msg
 
 nullog = ->
 
 get_namespaced_logger = (log_ns) ->
-    if LOGCFG
-        LOGCFG.ns or= {}
-        unless LOGCFG.ns.hasOwnProperty log_ns
-            LOGCFG.ns[log_ns] = true
-
     info:   partial log, INFO, log_ns
     warn:   partial log, WARN, log_ns
     error:  partial log, ERROR, log_ns
@@ -136,7 +143,6 @@ module.exports =
 
     # for use like this: {info, warn,...} = (require 'console.logger').ns 'my-ns'
     ns: get_namespaced_logger
-
 
     protocols:
         definitions:
