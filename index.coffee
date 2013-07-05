@@ -31,11 +31,10 @@ unless root.console
 {partial, or_, and_, bool, is_object, is_array} = require 'libprotein'
 
 LOGCFG = try
-    bt = require 'bootstrapper'
-    if bt and (is_object bt.ENV) and (is_object bt.ENV.LOG)
-        bt.ENV.LOG
-    else
-        null
+    {get_config} = require 'config'
+    log_cfg = get_config 'ENV.LOG'
+    if log_cfg then log_cfg else null
+    
 catch e
     if process? and (is_object process.ENV) and (is_object process.ENV.LOG)
         process.ENV.LOG
