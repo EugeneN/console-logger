@@ -5,6 +5,14 @@ else if window?
 else
     {}
 
+in_browser = if window? then true else false
+in_nodejs = if process? then true else false
+
+{get_config} = require 'config'
+
+showlog = get_config 'ENV.LOG.cs_log_show_hash'
+logtime = get_config 'ENV.LOG.cs_log_show_time'
+
 unless root.console
     root.console =
         log: ->
@@ -31,45 +39,56 @@ unless root.console
 {partial, or_, and_, bool, is_object, is_array} = require 'libprotein'
 
 LOGCFG = try
-    {get_config} = require 'config'
     log_cfg = get_config 'ENV.LOG'
     if log_cfg then log_cfg else null
     
 catch e
-    if process? and (is_object process.ENV) and (is_object process.ENV.LOG)
+    if in_nodejs and (is_object process.ENV) and (is_object process.ENV.LOG)
         process.ENV.LOG
-    else if window? and (is_object window.ENV) and (is_object window.ENV.LOG)
+    else if in_browser and (is_object window.ENV) and (is_object window.ENV.LOG)
         window.ENV.LOG
     else
         null
 
+####################
+parse_location_hash = (hash) ->
+    parts = hash.split ';'
+    grep = (p, prefix) ->
+        prefix = prefix + '='
+        r = p.filter((p) -> p[0...prefix.length] is prefix)
+             .map((p) -> p[prefix.length...].split '|')
 
-try
-    if window? and LOGCFG
-        window.logger_mute_ns_except = (exp) ->
-            if exp and not is_array exp
-                exp = [exp]
+        if r.length > 0
+            r.reduce((a,b) -> a.concat b)
+        else
+            null
 
-            for k of LOGCFG.ns
-                LOGCFG.ns[k] = if k in exp then true else false
+    enabled: showlog in parts
+    ns: grep parts, 'ns'
+    level: grep parts, 'level'
 
-        window.logger_unmute_ns = ->
-            for k of LOGCFG.ns
-                LOGCFG.ns[k] = true
+hash_level = (level) ->
+    if in_browser
+        hash_cfg = parse_location_hash document.location.hash[1...]
+        return true if hash_cfg.level is null
 
-        window.logger_mute_ns = ->
-            for k of LOGCFG.ns
-                LOGCFG.ns[k] = false
+        if level.toLowerCase() in hash_cfg.level.map((i) -> i.toLowerCase()) 
+            true 
+        else
+            false
+    else
+        false
 
-        window.logger_unmute_level = ->
-            for k of LOGCFG.level
-                LOGCFG.level[k] = true
+hash_ns = (ns) ->
+    if in_browser
+        hash_cfg = parse_location_hash document.location.hash[1...]
+        return true if hash_cfg.ns is null
 
-        window.logger_mute_level = ->
-            for k of LOGCFG.level
-                LOGCFG.level[k] = false
-catch e
-    null
+        if ns in hash_cfg.ns then true else false
+    else
+        false
+####################
+    
 
 INFO = 'INFO'
 WARN = 'WARN'
@@ -81,7 +100,10 @@ LOG_LEVELS = [INFO, WARN, ERROR, DEBUG, NOTICE]
 UNK_NS = 'UNK_NS'
 
 say = (log_level, log_ns, msgs) ->
-    m = [(if log_level then "[#{log_level}]" else '[NOTICE]'),
+    log_time = document.location.hash.indexOf(logtime) > -1
+
+    m = [(if log_time then "[#{(new Date).valueOf()}]" else "")
+         (if log_level then "[#{log_level}]" else '[NOTICE]'),
          (if log_ns then "[#{log_ns}]" else "[#{UNK_NS}]")].concat msgs
     switch log_level
         when ERROR
@@ -99,27 +121,34 @@ say = (log_level, log_ns, msgs) ->
             console?.log m...
 
 log_level_enabled = (log_level) ->
-    if LOGCFG then (LOGCFG.level?[log_level] is true) else true
+    cfg_level = if LOGCFG then (LOGCFG.level?[log_level] is true) else true
+    if in_browser
+        (hash_level log_level) #or cfg_level
+    else
+        cfg_level
 
 log_ns_enabled = (log_ns) ->
-    if LOGCFG then (LOGCFG.ns?[log_ns] is true) else false
+    cfg_ns = if LOGCFG then (LOGCFG.ns?[log_ns] is true) else false
+    if in_browser
+        (hash_ns log_ns) #or cfg_ns
+    else
+        cfg_ns
 
 log = (log_level, log_ns, msg...) ->
-    ns_keys = (k for k, v of LOGCFG.ns)
-
     enabled = if LOGCFG.enabled?
         LOGCFG.enabled
+        if in_browser
+            hash_cfg = parse_location_hash document.location.hash[1...]
+            hash_cfg.enabled or LOGCFG.enabled
+        else
+            LOGCFG.enabled
     else
         true
 
     return unless enabled
 
-    if ns_keys.length
-        if log_ns_enabled(log_ns) and (log_level_enabled log_level)
-            say log_level, log_ns, msg
-    else
-        if (log_level_enabled log_level)
-            say log_level, log_ns, msg
+    if (log_ns_enabled log_ns) and (log_level_enabled log_level)
+        say log_level, log_ns, msg
 
 nullog = ->
 
