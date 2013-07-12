@@ -8,10 +8,14 @@ else
 in_browser = if window? then true else false
 in_nodejs = if process? then true else false
 
-{get_config} = require 'config'
+{showlog, logtime} = try
+    {get_config} = require 'config'
 
-showlog = get_config 'ENV.LOG.cs_log_show_hash'
-logtime = get_config 'ENV.LOG.cs_log_show_time'
+    showlog: get_config 'ENV.LOG.cs_log_show_hash'
+    logtime: get_config 'ENV.LOG.cs_log_show_time'
+catch e
+    showlog: 'showlog'
+    logtime: 'logtime'
 
 unless root.console
     root.console =
