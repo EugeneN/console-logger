@@ -55,12 +55,35 @@ catch e
         null
 
 ####################
+# good code, but does not work in ie7
+# parse_location_hash = (hash) ->
+#     parts = hash.split ';'
+#     grep = (p, prefix) ->
+#         prefix = prefix + '='
+#         r = p.filter((p) -> p[0...prefix.length] is prefix)
+#              .map((p) -> p[prefix.length...].split '|')
+
+#         if r.length > 0
+#             r.reduce((a,b) -> a.concat b)
+#         else
+#             null
+
+#     enabled: showlog in parts
+#     ns: grep parts, 'ns'
+#     level: grep parts, 'level'
+
+
+# code for ie7
+filter = (list, f) -> i for i in list when (f i) is true
+
+slice = (str, start, stop) -> str.substr start, stop
+
 parse_location_hash = (hash) ->
     parts = hash.split ';'
-    grep = (p, prefix) ->
+    grep = (pp, prefix) ->
         prefix = prefix + '='
-        r = p.filter((p) -> p[0...prefix.length] is prefix)
-             .map((p) -> p[prefix.length...].split '|')
+        r = filter(pp, (p) -> (slice p, prefix.length) is prefix)
+             .map((q) -> (slice q, prefix.length).split '|')
 
         if r.length > 0
             r.reduce((a,b) -> a.concat b)
@@ -70,6 +93,7 @@ parse_location_hash = (hash) ->
     enabled: showlog in parts
     ns: grep parts, 'ns'
     level: grep parts, 'level'
+
 
 hash_level = (level) ->
     if in_browser
