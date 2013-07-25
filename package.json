@@ -1,7 +1,7 @@
 {
   "name": "console-logger",
   "description": "Simple implementation of an ILogger protocol, can be used as an common-js module too",
-  "version": "0.0.106",
+  "version": "0.0.107",
   "author": {
     "name": "E.Naumenko"
   },
@@ -21,7 +21,5 @@
   ],
   "main": "./index.js",
   "readme": "console-logger\n==============",
-  "readmeFilename": "README.md",
-  "_id": "console-logger@0.0.106",
-  "_from": "console-logger@"
+  "readmeFilename": "README.md"
 }

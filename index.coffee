@@ -82,8 +82,8 @@ parse_location_hash = (hash) ->
     parts = hash.split ';'
     grep = (pp, prefix) ->
         prefix = prefix + '='
-        r = filter(pp, (p) -> (slice p, prefix.length) is prefix)
-             .map((q) -> (slice q, prefix.length).split '|')
+        r = filter(pp, (p) -> (slice p, 0, prefix.length) is prefix)\
+            .map((q) -> (slice q, prefix.length).split '|')
 
         if r.length > 0
             r.reduce((a,b) -> a.concat b)
