@@ -29,6 +29,7 @@ unless root.console
         profile: ->
         profileEnd: ->
 
+console = root.console
 
 # HOTFIX for ie < 9 (doesn't supports console.log.apply as a function)
 # link - http://stackoverflow.com/questions/5538972/console-log-apply-not-working-in-ie9
@@ -38,7 +39,15 @@ unless root.console
     ].forEach(function (method) {
         console[method] = this.bind(console[method], console);
     }, Function.prototype.call);
-}`
+}
+if (Function.prototype.bind && console && typeof console.debug == "object") {
+    [
+      "debug"
+    ].forEach(function (method) {
+        console[method] = this.bind(console[method], console);
+    }, Function.prototype.call);
+}
+`
 
 {partial, or_, and_, bool, is_object, is_array} = require 'libprotein'
 
