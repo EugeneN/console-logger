@@ -8,14 +8,13 @@ else
 in_browser = if window? then true else false
 in_nodejs = if process? then true else false
 
-{showlog, logtime} = try
+[SHOWLOG, LOGTIME] = try
     {get_config} = require 'config'
 
-    showlog: get_config 'ENV.LOG.cs_log_show_hash'
-    logtime: get_config 'ENV.LOG.cs_log_show_time'
+    [(get_config 'ENV.LOG.cs_log_show_hash'),
+     (get_config 'ENV.LOG.cs_log_show_time')]
 catch e
-    showlog: 'showlog'
-    logtime: 'logtime'
+    ['showlog', 'logtime']
 
 unless root.console
     root.console =
@@ -63,53 +62,103 @@ catch e
     else
         null
 
-####################
-# good code, but does not work in ie7
-# parse_location_hash = (hash) ->
-#     parts = hash.split ';'
-#     grep = (p, prefix) ->
-#         prefix = prefix + '='
-#         r = p.filter((p) -> p[0...prefix.length] is prefix)
-#              .map((p) -> p[prefix.length...].split '|')
+################################################################################
+trimLeft = (s) -> s.replace /^\s+/, ""
+trimRight = (s) -> s.replace /\s+$/, ""
 
-#         if r.length > 0
-#             r.reduce((a,b) -> a.concat b)
-#         else
-#             null
+RE1 = /^\s*\$Version=(?:"1"|1);\s*(.*)/
+RE2 = /(?:^|\s+)([!#$%&'*+\-.0-9A-Z^`a-z|~]+)=([!#$%&'*+\-.0-9A-Z^`a-z|~]*|"(?:[\x20-\x7E\x80\xFF]|\\[\x00-\x7F])*")(?=\s*[,;]|$)/g
 
-#     enabled: showlog in parts
-#     ns: grep parts, 'ns'
-#     level: grep parts, 'level'
+get_cookies = ->
+    c = document.cookie
+    v = 0
+    cookies = {}
 
+    if document.cookie.match RE1
+        c = RegExp.$1
+        v = 1
+    
+    if v is 0
+        c.split(/[,;]/).map((cookie) ->
+            parts = cookie.split '=', 2
+            name = decodeURIComponent (trimLeft parts[0])
+            cookies[name] = if parts.length > 1
+                decodeURIComponent (trimRight parts[1])
+            else 
+                null
+        )
+    else
+        c.match(RE2).map((name, maybe_value) ->
+            cookies[name] = if maybe_value.charAt(0) is '"'
+                maybe_value.substr(1, -1).replace(/\\(.)/g, "$1")
+            else
+                maybe_value
 
-# code for ie7
+        )
+    
+    cookies
+
+get_cookie = (name) -> get_cookies()[name]
+################################################################################
+        
 filter = (list, f) -> i for i in list when (f i) is true
 
 slice = (str, start, stop) -> str.substr start, stop
 
-parse_location_hash = (hash) ->
-    parts = hash.split ';'
-    grep = (pp, prefix) ->
-        prefix = prefix + '='
-        r = filter(pp, (p) -> (slice p, 0, prefix.length) is prefix)\
-            .map((q) -> (slice q, prefix.length).split '|')
+parse_config_hash = (hash) ->
+    if hash
+        parts = hash.split ';'
+        grep = (pp, prefix) ->
+            prefix = prefix + '='
+            r = filter(pp, (p) -> (slice p, 0, prefix.length) is prefix)\
+                .map((q) -> (slice q, prefix.length).split '|')
 
-        if r.length > 0
-            r.reduce((a,b) -> a.concat b)
-        else
-            null
+            if r.length > 0
+                r.reduce((a,b) -> a.concat b)
+            else
+                null
 
-    enabled: showlog in parts
-    ns: grep parts, 'ns'
-    level: grep parts, 'level'
+        enabled: SHOWLOG in parts
+        logtime: LOGTIME in parts
+        ns: grep parts, 'ns'
+        level: grep parts, 'level'
 
+    else
+        enabled: false
+        logtime: false
+        ns: null
+        level: null
 
+get_cookie_hash = -> get_cookie SHOWLOG
+    
+get_location_hash = -> document.location.hash[1...]
+
+submerge = (a, b) ->
+    if a is null and b is null
+        null
+    else if a is null and b isnt null
+        b
+    else if a isnt null and b is null
+        a
+    else
+        a.concat b
+
+merge = (a, b) ->
+    enabled: a.enabled or b.enabled
+    logtime: a.logtime or b.logtime
+    ns: submerge a.ns, b.ns
+    level: submerge a.level, b.level
+    
+get_browser_cfg = ->
+    merge (parse_config_hash get_location_hash()), (parse_config_hash get_cookie_hash())
+    
 hash_level = (level) ->
     if in_browser
-        hash_cfg = parse_location_hash document.location.hash[1...]
-        return true if hash_cfg.level is null
+        cfg = get_browser_cfg()
+        
+        return true if cfg.level is null
 
-        if level.toLowerCase() in hash_cfg.level.map((i) -> i.toLowerCase()) 
+        if level.toLowerCase() in cfg.level.map((i) -> i.toLowerCase()) 
             true 
         else
             false
@@ -118,13 +167,13 @@ hash_level = (level) ->
 
 hash_ns = (ns) ->
     if in_browser
-        hash_cfg = parse_location_hash document.location.hash[1...]
-        return true if hash_cfg.ns is null
+        cfg = get_browser_cfg()
+        return true if cfg.ns is null
 
-        if ns in hash_cfg.ns then true else false
+        if ns in cfg.ns then true else false
     else
         false
-####################
+################################################################################
     
 
 INFO = 'INFO'
@@ -136,9 +185,7 @@ LOG_LEVELS = [INFO, WARN, ERROR, DEBUG, NOTICE]
 
 UNK_NS = 'UNK_NS'
 
-say = (log_level, log_ns, msgs) ->
-    log_time = document.location.hash.indexOf(logtime) > -1
-
+say = (log_time, log_level, log_ns, msgs) ->
     m = [(if log_time then "[#{(new Date).valueOf()}]" else "")
          (if log_level then "[#{log_level}]" else '[NOTICE]'),
          (if log_ns then "[#{log_ns}]" else "[#{UNK_NS}]")].concat msgs
@@ -172,20 +219,20 @@ log_ns_enabled = (log_ns) ->
         cfg_ns
 
 log = (log_level, log_ns, msg...) ->
-    enabled = if LOGCFG.enabled?
-        LOGCFG.enabled
+    [enabled, log_time] = if LOGCFG.enabled?
         if in_browser
-            hash_cfg = parse_location_hash document.location.hash[1...]
-            hash_cfg.enabled or LOGCFG.enabled
+            browser_cfg = get_browser_cfg()
+            [browser_cfg.enabled or LOGCFG.enabled,
+             browser_cfg.logtime or LOGCFG.logtime]
         else
-            LOGCFG.enabled
+            [LOGCFG.enabled, LOGCFG.logtime]
     else
-        true
+        [true, false]
 
     return unless enabled
 
     if (log_ns_enabled log_ns) and (log_level_enabled log_level)
-        say log_level, log_ns, msg
+        say log_time, log_level, log_ns, msg
 
 nullog = ->
 
