@@ -118,10 +118,15 @@ parse_config_hash = (hash) ->
             else
                 null
 
+        list_to_dict = (l) ->
+            d = {}
+            d[i] = true for i in l if l
+            d
+
         enabled: SHOWLOG in parts
         logtime: LOGTIME in parts
-        ns: grep parts, 'ns'
-        level: grep parts, 'level'
+        ns: list_to_dict (grep parts, 'ns')
+        level: list_to_dict (grep parts, 'level')
 
     else
         enabled: false
@@ -133,7 +138,13 @@ get_cookie_hash = -> get_cookie SHOWLOG
     
 get_location_hash = -> document.location.hash[1...]
 
-submerge = (a, b) ->
+merge_objects = (a, b, lc) ->
+    r = {}
+    r[if lc then k.toLowerCase() else k] = v for own k,v of a
+    r[if lc then k.toLowerCase() else k] = v for own k,v of b
+    r
+
+submerge = (a, b, lc) ->
     if a is null and b is null
         null
     else if a is null and b isnt null
@@ -141,38 +152,49 @@ submerge = (a, b) ->
     else if a isnt null and b is null
         a
     else
-        a.concat b
+        merge_objects a, b, lc
 
 merge = (a, b) ->
-    enabled: a.enabled or b.enabled
-    logtime: a.logtime or b.logtime
-    ns: submerge a.ns, b.ns
-    level: submerge a.level, b.level
-    
-get_browser_cfg = ->
-    merge (parse_config_hash get_location_hash()), (parse_config_hash get_cookie_hash())
-    
-hash_level = (level) ->
-    if in_browser
-        cfg = get_browser_cfg()
-        
-        return true if cfg.level is null
-
-        if level.toLowerCase() in cfg.level.map((i) -> i.toLowerCase()) 
-            true 
-        else
-            false
+    if a is null and b is null
+        null
+    else if a is null and b isnt null
+        b
+    else if a isnt null and b is null
+            a
     else
-        false
+        enabled: a.enabled or b.enabled
+        logtime: a.logtime or b.logtime
+        ns: submerge a.ns, b.ns
+        level: submerge a.level, b.level, true
 
-hash_ns = (ns) ->
+_runtime_cfg = undefined
+get_runtime_cfg = ->
+    unless _runtime_cfg
+        x = (merge (parse_config_hash get_location_hash()),
+                   (parse_config_hash get_cookie_hash()))
+        _runtime_cfg = merge LOGCFG, x
+    _runtime_cfg
+
+[enabled, log_time] = if LOGCFG.enabled?
     if in_browser
-        cfg = get_browser_cfg()
-        return true if cfg.ns is null
-
-        if ns in cfg.ns then true else false
+        browser_cfg = get_runtime_cfg()
+        [browser_cfg.enabled or LOGCFG.enabled,
+         browser_cfg.logtime or LOGCFG.logtime]
     else
-        false
+        [LOGCFG.enabled, LOGCFG.logtime]
+else
+    [true, false]
+    
+log_level_enabled = (level) ->
+    cfg = get_runtime_cfg()
+    return true if Object.keys(cfg.level).length is 0
+    level.toLowerCase() of cfg.level
+
+log_ns_enabled = (ns) ->
+    cfg = get_runtime_cfg()
+    return true if Object.keys(cfg.ns).length is 0
+    ns of cfg.ns
+
 ################################################################################
     
 
@@ -183,7 +205,7 @@ DEBUG = 'DEBUG'
 NOTICE = 'NOTICE'
 LOG_LEVELS = [INFO, WARN, ERROR, DEBUG, NOTICE]
 
-UNK_NS = 'UNK_NS'
+UNK_NS = '?'
 
 say = (log_time, log_level, log_ns, msgs) ->
     m = [(if log_time then "[#{(new Date).valueOf()}]" else "")
@@ -204,31 +226,7 @@ say = (log_time, log_level, log_ns, msgs) ->
         else
             console?.log m...
 
-log_level_enabled = (log_level) ->
-    cfg_level = if LOGCFG then (LOGCFG.level?[log_level] is true) else true
-    if in_browser
-        (hash_level log_level) #or cfg_level
-    else
-        cfg_level
-
-log_ns_enabled = (log_ns) ->
-    cfg_ns = if LOGCFG then (LOGCFG.ns?[log_ns] is true) else false
-    if in_browser
-        (hash_ns log_ns) #or cfg_ns
-    else
-        cfg_ns
-
 log = (log_level, log_ns, msg...) ->
-    [enabled, log_time] = if LOGCFG.enabled?
-        if in_browser
-            browser_cfg = get_browser_cfg()
-            [browser_cfg.enabled or LOGCFG.enabled,
-             browser_cfg.logtime or LOGCFG.logtime]
-        else
-            [LOGCFG.enabled, LOGCFG.logtime]
-    else
-        [true, false]
-
     return unless enabled
 
     if (log_ns_enabled log_ns) and (log_level_enabled log_level)
